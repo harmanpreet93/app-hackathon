@@ -1,18 +1,24 @@
 package app.hackathon.hackathon;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
+import android.widget.RatingBar;
 import android.widget.TextView;
+
+import java.io.File;
 
 public class ProductActivity extends AppCompatActivity {
 
     private ImageView imageView;
-    private TextView name,screen,reviews;
+    private TextView name;
+    private RatingBar battery,camera,touch, sound,display;
     private CollapsingToolbarLayout collapsingToolbarLayout;
 
     @Override
@@ -51,32 +57,44 @@ public class ProductActivity extends AppCompatActivity {
     private void initUI() {
         collapsingToolbarLayout = (CollapsingToolbarLayout) findViewById(R.id.collapsing_toolbar);
         name = (TextView) findViewById(R.id.product_name);
-        screen = (TextView) findViewById(R.id.screen);
-        reviews = (TextView) findViewById(R.id.reviews);
-        imageView = (ImageView) findViewById(R.id.event_image);
+        battery = (RatingBar) findViewById(R.id.battery);
+        camera = (RatingBar) findViewById(R.id.camera);
+        touch = (RatingBar) findViewById(R.id.touch);
+        sound = (RatingBar) findViewById(R.id.sound);
+        display = (RatingBar) findViewById(R.id.display);
+        imageView = (ImageView) findViewById(R.id.image);
     }
 
     private void setUI() {
         Intent intent = getIntent();
         String mName = intent.getStringExtra("name");
-        String mScreen = intent.getStringExtra("screen");
-        String mReviews = intent.getStringExtra("reviews");
-        String mRecommendations = intent.getStringExtra("recommendations");
+        String mBattery = intent.getStringExtra("battery");
+        String mCamera = intent.getStringExtra("camera");
+        String mTouch = intent.getStringExtra("touch");
+        String mSound = intent.getStringExtra("sound");
+        String mDisplay = intent.getStringExtra("display");
+        String imagePath = intent.getStringExtra("image_path");
+
+        File imgFile = new  File(imagePath);
+
+        if(imgFile.exists()){
+
+            Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
+
+            imageView.setImageBitmap(myBitmap);
+
+        }
 
         collapsingToolbarLayout.setTitle(mName);
 //        collapsingToolbarLayout.setExpandedTitleTextAppearance(R.style.ExpandedAppBar);
         collapsingToolbarLayout.setCollapsedTitleTextAppearance(R.style.CollapsedAppBar);
 //        getSupportActionBar().setTitle(name);
         name.setText(mName);
-        screen.setText(mScreen);
-        reviews.setText(mReviews);
-//        mRecommendations.setText(mRecommendations);
-
-        // loading image using Glide library
-//        Glide.with(this)
-//                .load(url)
-//                .error(R.drawable.toppr_app_icon)
-//                .into(imageView);
+        battery.setRating(Float.parseFloat(mBattery)/20);
+        camera.setRating(Float.parseFloat(mCamera)/20);
+        touch.setRating(Float.parseFloat(mTouch)/20);
+        sound.setRating(Float.parseFloat(mSound)/20);
+        display.setRating(Float.parseFloat(mDisplay)/20);
 
     }
 }

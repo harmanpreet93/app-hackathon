@@ -47,25 +47,30 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:gravity="center"
             android:layout_margin="12dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Screen: "
+                android:text="Battery: "
                 android:textAllCaps="true"
                 android:textSize="16sp"
                 android:layout_marginBottom="4dp"
                 android:textColor="@android:color/black"/>
 
-            <TextView
-                android:id="@+id/screen"
+            <RatingBar
+                android:id="@+id/battery"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="1,920 x 1,080 pixels"
-                android:layout_marginBottom="4dp"
-                android:textSize="16sp"
-                android:textColor="@android:color/black"/>
+                android:layout_gravity="left"
+                android:backgroundTint="@color/colorPrimary"
+                android:clickable="false"
+                android:isIndicator="true"
+                android:numStars="5"
+                android:progressTint="@color/colorPrimary"
+                android:secondaryProgressTint="@android:color/transparent"
+                android:stepSize="0.5" />
 
         </LinearLayout>
 
@@ -78,28 +83,143 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:orientation="horizontal"
+            android:gravity="center"
             android:layout_margin="12dp">
 
             <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Reviews"
-                android:maxLines="1"
-                android:textSize="16sp"
-                android:textAllCaps="true"
-                android:layout_marginBottom="4dp"
-                android:textColor="@android:color/black"
-                android:id="@+id/textView" />
-
-            <TextView
-                android:id="@+id/reviews"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Expensive, Best Smartphone, Best Camera"
-                android:textSize="14sp"
+                android:text="Camera: "
+                android:textAllCaps="true"
+                android:textSize="16sp"
                 android:layout_marginBottom="4dp"
                 android:textColor="@android:color/black"/>
+
+            <RatingBar
+                android:id="@+id/camera"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left"
+                android:isIndicator="true"
+                android:backgroundTint="@color/colorPrimary"
+                android:clickable="false"
+                android:numStars="5"
+                android:progressTint="@color/colorPrimary"
+                android:secondaryProgressTint="@android:color/transparent"
+                android:stepSize="0.5" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@android:color/darker_gray"
+            android:padding="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_margin="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Touch: "
+                android:textAllCaps="true"
+                android:textSize="16sp"
+                android:layout_marginBottom="4dp"
+                android:textColor="@android:color/black"/>
+
+            <RatingBar
+                android:id="@+id/touch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left"
+                android:backgroundTint="@color/colorPrimary"
+                android:clickable="false"
+                android:isIndicator="true"
+                android:numStars="5"
+                android:progressTint="@color/colorPrimary"
+                android:secondaryProgressTint="@android:color/transparent"
+                android:stepSize="0.5" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@android:color/darker_gray"
+            android:padding="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_margin="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sound: "
+                android:isIndicator="true"
+                android:textAllCaps="true"
+                android:textSize="16sp"
+                android:layout_marginBottom="4dp"
+                android:textColor="@android:color/black"/>
+
+            <RatingBar
+                android:id="@+id/sound"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left"
+                android:backgroundTint="@color/colorPrimary"
+                android:isIndicator="true"
+                android:clickable="false"
+                android:numStars="5"
+                android:progressTint="@color/colorPrimary"
+                android:secondaryProgressTint="@android:color/transparent"
+                android:stepSize="0.5" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@android:color/darker_gray"
+            android:padding="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_margin="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Display: "
+                android:textAllCaps="true"
+                android:textSize="16sp"
+                android:layout_marginBottom="4dp"
+                android:textColor="@android:color/black"/>
+
+            <RatingBar
+                android:id="@+id/display"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left"
+                android:isIndicator="true"
+                android:backgroundTint="@color/colorPrimary"
+                android:clickable="false"
+                android:numStars="5"
+                android:progressTint="@color/colorPrimary"
+                android:secondaryProgressTint="@android:color/transparent"
+                android:stepSize="0.5" />
 
         </LinearLayout>
 

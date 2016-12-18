@@ -28,7 +28,7 @@ android:layout_height="match_parent">
             app:layout_scrollFlags="scroll|exitUntilCollapsed">
 
             <ImageView
-                android:id="@+id/event_image"
+                android:id="@+id/image"
                 android:layout_width="match_parent"
                 android:layout_height="320dp"
                 android:fitsSystemWindows="true"

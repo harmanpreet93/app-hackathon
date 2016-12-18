@@ -1,9 +1,12 @@
 package app.hackathon.hackathon;
 
+import android.Manifest;
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
 import android.net.Uri;
@@ -11,6 +14,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Base64;
@@ -19,27 +23,24 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.android.volley.AuthFailureError;
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Hashtable;
-import java.util.Map;
 
 public class MainActivity extends AppCompatActivity
         implements View.OnClickListener {
@@ -51,15 +52,23 @@ public class MainActivity extends AppCompatActivity
     private String mCurrentPhotoPath;
 
     private String KEY_IMAGE = "image";
-    private String UPLOAD_URL ="http://192.168.1.97:8080/upload";
+//    private String UPLOAD_URL ="http://192.168.1.97:8080/upload";
+    private String UPLOAD_URL ="http://192.168.1.235:1819/upload";
+//    private String UPLOAD_URL ="http://192.168.1.207:8080/upload";
     private Bitmap bitmap = null;
-
+    // Storage Permissions
+    private static final int REQUEST_EXTERNAL_STORAGE = 1;
+    private static String[] PERMISSIONS_STORAGE = {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
     private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        verifyStoragePermissions(MainActivity.this);
         mAlbumStorageDirFactory = new AlbumDirFactory();
         sendImageData = (Button) findViewById(R.id.send_image);
         sendImageData.setOnClickListener(this);
@@ -110,6 +119,32 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+
+
+    /**
+     * Checks if the app has permission to write to device storage
+     *
+     * If the app does not has permission then the user will be prompted to grant permissions
+     *
+     * @param activity
+     */
+    public static void verifyStoragePermissions(Activity activity) {
+        // Check if we have write permission
+        int permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            // We don't have permission so prompt the user
+            ActivityCompat.requestPermissions(
+                    activity,
+                    PERMISSIONS_STORAGE,
+                    REQUEST_EXTERNAL_STORAGE
+            );
+        }
+        else {
+            Toast.makeText(activity, "PERMISSION_DENIED", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void handleCameraPhoto() {
         if (mCurrentPhotoPath != null) {
             Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
@@ -117,18 +152,22 @@ public class MainActivity extends AppCompatActivity
             Uri contentUri = Uri.fromFile(f);
             mediaScanIntent.setData(contentUri);
             this.sendBroadcast(mediaScanIntent);
-
-            try {
-                //Getting the Bitmap from Gallery
-                bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), contentUri);
-//                uploadImage();
-//                uploadFile();
-                new SendImage().execute();
-            } catch (IOException e) {
-                e.printStackTrace();
-                Toast.makeText(MainActivity.this, "Error while fetching bitmap" , Toast.LENGTH_LONG).show();
-
+            new SendImage().execute();
+            if (!progressDialog.isShowing()) {
+                progressDialog.show();
             }
+
+//            try {
+//                //Getting the Bitmap from Gallery
+//                bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), contentUri);
+////                uploadImage();
+////                uploadFile();
+//                new SendImage().execute();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//                Toast.makeText(MainActivity.this, "Error while fetching bitmap" , Toast.LENGTH_LONG).show();
+//
+//            }
         }
     }
 
@@ -147,71 +186,71 @@ public class MainActivity extends AppCompatActivity
         myDialog.show();
     }
 
-    private void uploadImage(){
-        if(isNetworkConnected()) {
-            if (!progressDialog.isShowing()) {
-                progressDialog.show();
-            }
-            //Showing the progress dialog
-            StringRequest stringRequest = new StringRequest(Request.Method.POST, UPLOAD_URL,
-                    new Response.Listener<String>() {
-                        @Override
-                        public void onResponse(String response) {
-                            Log.v("wtf", "Uploaded image");
-                            if (progressDialog.isShowing()) {
-                                progressDialog.dismiss();
-                            }
-
-                            Intent intent = new Intent(MainActivity.this,ProductActivity.class);
-                            intent.putExtra("name","Iphone");
-                            intent.putExtra("screen","1,920 x 1,080 pixels");
-                            intent.putExtra("reviews","Expensive, Best Smartphone, Best Camera");
-                            intent.putExtra("recommendations","Moto Z, Google Pixel");
-                            MainActivity.this.startActivity(intent);
-
-                            //Showing toast message of the response
-//                        Toast.makeText(MainActivity.this, response, Toast.LENGTH_LONG).show();
-                        }
-                    },
-                    new Response.ErrorListener() {
-                        @Override
-                        public void onErrorResponse(VolleyError volleyError) {
-                            if (progressDialog.isShowing()) {
-                                progressDialog.dismiss();
-                            }
-                            //Dismissing the progress dialog
-                            //Showing toast
-                            Log.v("wtf error", volleyError.toString());
-                            showAlertDialogBox("Error", "Something went wrong");
-                            Toast.makeText(MainActivity.this, volleyError.getMessage(), Toast.LENGTH_LONG).show();
-                        }
-                    }) {
-                @Override
-                protected Map<String, String> getParams() throws AuthFailureError {
-                    //Converting Bitmap to String
-                    String image = getStringImage(bitmap);
-
-                    //Creating parameters
-                    Map<String, String> params = new Hashtable<String, String>();
-
-                    //Adding parameters
-                    params.put(KEY_IMAGE, image);
-
-                    //returning parameters
-                    return params;
-                }
-            };
-
-            //Creating a Request Queue
-            RequestQueue requestQueue = Volley.newRequestQueue(this);
-
-            //Adding request to the queue
-            requestQueue.add(stringRequest);
-        }
-        else {
-            showAlertDialogBox("No Internet","Please check your internet connectivity.");
-        }
-    }
+//    private void uploadImage(){
+//        if(isNetworkConnected()) {
+//            if (!progressDialog.isShowing()) {
+//                progressDialog.show();
+//            }
+//            //Showing the progress dialog
+//            StringRequest stringRequest = new StringRequest(Request.Method.POST, UPLOAD_URL,
+//                    new Response.Listener<String>() {
+//                        @Override
+//                        public void onResponse(String response) {
+//                            Log.v("wtf", "Uploaded image");
+//                            if (progressDialog.isShowing()) {
+//                                progressDialog.dismiss();
+//                            }
+//
+//                            Intent intent = new Intent(MainActivity.this,ProductActivity.class);
+//                            intent.putExtra("name","Iphone");
+//                            intent.putExtra("screen","1,920 x 1,080 pixels");
+//                            intent.putExtra("reviews","Expensive, Best Smartphone, Best Camera");
+//                            intent.putExtra("recommendations","Moto Z, Google Pixel");
+//                            MainActivity.this.startActivity(intent);
+//
+//                            //Showing toast message of the response
+////                        Toast.makeText(MainActivity.this, response, Toast.LENGTH_LONG).show();
+//                        }
+//                    },
+//                    new Response.ErrorListener() {
+//                        @Override
+//                        public void onErrorResponse(VolleyError volleyError) {
+//                            if (progressDialog.isShowing()) {
+//                                progressDialog.dismiss();
+//                            }
+//                            //Dismissing the progress dialog
+//                            //Showing toast
+//                            Log.v("wtf error", volleyError.toString());
+//                            showAlertDialogBox("Error", "Something went wrong");
+//                            Toast.makeText(MainActivity.this, volleyError.getMessage(), Toast.LENGTH_LONG).show();
+//                        }
+//                    }) {
+//                @Override
+//                protected Map<String, String> getParams() throws AuthFailureError {
+//                    //Converting Bitmap to String
+//                    String image = getStringImage(bitmap);
+//
+//                    //Creating parameters
+//                    Map<String, String> params = new Hashtable<String, String>();
+//
+//                    //Adding parameters
+//                    params.put(KEY_IMAGE, image);
+//
+//                    //returning parameters
+//                    return params;
+//                }
+//            };
+//
+//            //Creating a Request Queue
+//            RequestQueue requestQueue = Volley.newRequestQueue(this);
+//
+//            //Adding request to the queue
+//            requestQueue.add(stringRequest);
+//        }
+//        else {
+//            showAlertDialogBox("No Internet","Please check your internet connectivity.");
+//        }
+//    }
 
     private class SendImage extends AsyncTask<Void,Void,Void> {
 
@@ -224,6 +263,8 @@ public class MainActivity extends AppCompatActivity
     }
     private String uploadFile() {
         if(isNetworkConnected()) {
+//            progressDialog.show();
+
 
             HttpURLConnection conn = null;
             DataOutputStream dos = null;
@@ -234,7 +275,6 @@ public class MainActivity extends AppCompatActivity
             byte[] buffer;
             int maxBufferSize = 5 * 1024 * 1024;
             File sourceFile = new File(mCurrentPhotoPath);
-            mCurrentPhotoPath = null;
             String serverResponseMessage = null;
             String response = null;
             if (!sourceFile.isFile()) {
@@ -286,16 +326,42 @@ public class MainActivity extends AppCompatActivity
                     Log.i("uploadFile", "HTTP Response is : "
                             + serverResponseMessage + ": " + serverResponseCode);
                     if (serverResponseCode <= 200) {
+                        Log.v("wtf","Response: " + serverResponseMessage);
 
+                        final HttpURLConnection finalConn = conn;
                         runOnUiThread(new Runnable() {
                             public void run() {
+                                StringBuilder result = new StringBuilder();
+                                JSONObject j = null;
+                                try {
+                                    InputStream in = new BufferedInputStream(finalConn.getInputStream());
 
-                                Intent intent = new Intent(MainActivity.this,ProductActivity.class);
-                                intent.putExtra("name","Iphone");
-                                intent.putExtra("screen","5");
-                                intent.putExtra("sound","3");
-                                intent.putExtra("resolution","5");
-                                MainActivity.this.startActivity(intent);
+                                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+
+                                    String line;
+                                    while ((line = reader.readLine()) != null) {
+                                        result.append(line);
+                                        Log.v("wtf",line);
+                                    }
+                                    Log.v("wtf",result.toString());
+                                    JSONObject jsonObject = new JSONObject(result.toString());
+                                    Log.v("wtf",jsonObject.getString("Battery"));
+                                    Intent intent = new Intent(MainActivity.this,ProductActivity.class);
+                                    intent.putExtra("name",jsonObject.getString("name"));
+                                    intent.putExtra("battery",jsonObject.getString("Battery"));
+                                    intent.putExtra("camera",jsonObject.getString("Camera"));
+                                    intent.putExtra("touch",jsonObject.getString("Touch"));
+                                    intent.putExtra("sound",jsonObject.getString("Sound"));
+                                    intent.putExtra("display",jsonObject.getString("Display"));
+                                    intent.putExtra("image_path",mCurrentPhotoPath);
+                                    MainActivity.this.startActivity(intent);
+                                    mCurrentPhotoPath = null;
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+
 //                                Toast.makeText(MainActivity.this, "File Upload Complete.",
 //                                        Toast.LENGTH_SHORT).show();
                             }
@@ -314,7 +380,7 @@ public class MainActivity extends AppCompatActivity
 
                     runOnUiThread(new Runnable() {
                         public void run() {
-
+//                            mCurrentPhotoPath = null;
                             Toast.makeText(MainActivity.this, "MalformedURLException", Toast.LENGTH_SHORT).show();
                         }
                     });
@@ -323,6 +389,8 @@ public class MainActivity extends AppCompatActivity
                         progressDialog.dismiss();
                     }
                     e.printStackTrace();
+
+//                    mCurrentPhotoPath = null;
 
                     runOnUiThread(new Runnable() {
                         public void run() {
@@ -339,6 +407,7 @@ public class MainActivity extends AppCompatActivity
         }
         else {
             showAlertDialogBox("No Internet","Please check your internet connectivity.");
+//            mCurrentPhotoPath = null;
             return null;
         }
     }
@@ -374,7 +443,7 @@ public class MainActivity extends AppCompatActivity
                 photoFile = null;
                 mCurrentPhotoPath = null;
 
-                Log.v("wtf","Error in camera");
+                Log.v("wtf","Error in camera: " + ex.toString());
                 new android.app.AlertDialog.Builder(MainActivity.this)
                         .setMessage("Couldn't take picture")
                         .setCancelable(false)
