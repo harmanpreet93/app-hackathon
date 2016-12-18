@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -27,8 +28,14 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Hashtable;
@@ -44,7 +51,7 @@ public class MainActivity extends AppCompatActivity
     private String mCurrentPhotoPath;
 
     private String KEY_IMAGE = "image";
-    private String UPLOAD_URL ="http://192.168.1.207:8080/upload";
+    private String UPLOAD_URL ="http://192.168.1.97:8080/upload";
     private Bitmap bitmap = null;
 
     private ProgressDialog progressDialog;
@@ -110,12 +117,13 @@ public class MainActivity extends AppCompatActivity
             Uri contentUri = Uri.fromFile(f);
             mediaScanIntent.setData(contentUri);
             this.sendBroadcast(mediaScanIntent);
-            mCurrentPhotoPath = null;
 
             try {
                 //Getting the Bitmap from Gallery
                 bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), contentUri);
-                uploadImage();
+//                uploadImage();
+//                uploadFile();
+                new SendImage().execute();
             } catch (IOException e) {
                 e.printStackTrace();
                 Toast.makeText(MainActivity.this, "Error while fetching bitmap" , Toast.LENGTH_LONG).show();
@@ -202,6 +210,136 @@ public class MainActivity extends AppCompatActivity
         }
         else {
             showAlertDialogBox("No Internet","Please check your internet connectivity.");
+        }
+    }
+
+    private class SendImage extends AsyncTask<Void,Void,Void> {
+
+        @Override
+        protected Void doInBackground(Void...mVoid) {
+            uploadFile();
+            return null;
+        }
+
+    }
+    private String uploadFile() {
+        if(isNetworkConnected()) {
+
+            HttpURLConnection conn = null;
+            DataOutputStream dos = null;
+            String lineEnd = "\r\n";
+            String twoHyphens = "--";
+            String boundary = "*****";
+            int bytesRead, bytesAvailable, bufferSize;
+            byte[] buffer;
+            int maxBufferSize = 5 * 1024 * 1024;
+            File sourceFile = new File(mCurrentPhotoPath);
+            mCurrentPhotoPath = null;
+            String serverResponseMessage = null;
+            String response = null;
+            if (!sourceFile.isFile()) {
+                if (progressDialog.isShowing()) {
+                    progressDialog.dismiss();
+                }
+
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), "File not found!", Toast.LENGTH_LONG).show();
+                    }
+                });
+
+                return "no file";
+            } else {
+                try {
+                    FileInputStream fileInputStream = new FileInputStream(sourceFile.getPath());
+                    URL url = new URL(UPLOAD_URL);
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setDoInput(true); // Allow Inputs
+                    conn.setDoOutput(true); // Allow Outputs
+                    conn.setUseCaches(false); // Don't use a Cached Copy
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Connection", "Keep-Alive");
+                    conn.setRequestProperty("ENCTYPE", "multipart/form-data");
+                    conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+                    conn.setRequestProperty(KEY_IMAGE, sourceFile.getName());
+                    dos = new DataOutputStream(conn.getOutputStream());
+                    dos.writeBytes(twoHyphens + boundary + lineEnd);
+                    dos.writeBytes("Content-Disposition: form-data; name=\"" + KEY_IMAGE + "\";filename="
+                            + sourceFile.getName() + lineEnd);
+                    dos.writeBytes(lineEnd);
+                    bytesAvailable = fileInputStream.available();
+                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                    buffer = new byte[bufferSize];
+                    bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+                    while (bytesRead > 0) {
+
+                        dos.write(buffer, 0, bufferSize);
+                        bytesAvailable = fileInputStream.available();
+                        bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                        bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+
+                    }
+                    dos.writeBytes(lineEnd);
+                    dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+                    int serverResponseCode = conn.getResponseCode();
+                    serverResponseMessage = conn.getResponseMessage();
+                    Log.i("uploadFile", "HTTP Response is : "
+                            + serverResponseMessage + ": " + serverResponseCode);
+                    if (serverResponseCode <= 200) {
+
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+
+                                Intent intent = new Intent(MainActivity.this,ProductActivity.class);
+                                intent.putExtra("name","Iphone");
+                                intent.putExtra("screen","5");
+                                intent.putExtra("sound","3");
+                                intent.putExtra("resolution","5");
+                                MainActivity.this.startActivity(intent);
+//                                Toast.makeText(MainActivity.this, "File Upload Complete.",
+//                                        Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                    fileInputStream.close();
+                    dos.flush();
+                    dos.close();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                } catch (MalformedURLException ex) {
+                    if (progressDialog.isShowing()) {
+                        progressDialog.dismiss();
+                    }
+                    ex.printStackTrace();
+
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+
+                            Toast.makeText(MainActivity.this, "MalformedURLException", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                } catch (IOException e) {
+                    if (progressDialog.isShowing()) {
+                        progressDialog.dismiss();
+                    }
+                    e.printStackTrace();
+
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            Toast.makeText(MainActivity.this, "Got Exception : see logcat ", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    Log.v("wtf", "Upload file to server Exception: " + e.getMessage(), e);
+                }
+            }
+            if (progressDialog.isShowing()) {
+                progressDialog.dismiss();
+            }
+            return response;
+        }
+        else {
+            showAlertDialogBox("No Internet","Please check your internet connectivity.");
+            return null;
         }
     }
 
